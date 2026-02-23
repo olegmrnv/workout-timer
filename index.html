@@ -299,6 +299,13 @@
               <button id="btnReset" class="danger" disabled>Reset</button>
           </div>
 
+          
+<div id="voiceTestPanel" style="margin-top:20px;">
+  <button onclick="listVoices()">Show Voices</button>
+  <div id="voiceList" style="margin-top:10px;"></div>
+</div>
+
+          
           <div class="small">
             Tip: on iPhone, make sure the ringer isn’t muted and volume is up. Some browsers require tapping “Start” before speech works.
           </div>
@@ -789,7 +796,35 @@
     voices.map(v => v.name + " (" + v.lang + ")").join("\n")
   );
 }, 2000);
-    
+    function listVoices() {
+  const container = document.getElementById("voiceList");
+  container.innerHTML = "";
+
+  const voices = speechSynthesis.getVoices();
+
+  voices.forEach(v => {
+    const btn = document.createElement("button");
+    btn.textContent = `${v.name} (${v.lang})`;
+    btn.style.display = "block";
+    btn.style.margin = "6px 0";
+
+    btn.onclick = () => {
+      const utter = new SpeechSynthesisUtterance(
+        "This is how I sound for your workout timer."
+      );
+      utter.voice = v;
+      utter.rate = 1.0;
+      speechSynthesis.speak(utter);
+    };
+
+    container.appendChild(btn);
+  });
+}
+
+// Important for iOS
+if (window.speechSynthesis) {
+  speechSynthesis.onvoiceschanged = () => {};
+}
   </script>
 </body>
 </html>
