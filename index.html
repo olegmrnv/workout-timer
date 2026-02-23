@@ -811,13 +811,6 @@ if (window.speechSynthesis) {
     renderQueue();
     setButtons();
 
-    setTimeout(() => {
-  const voices = speechSynthesis.getVoices();
-  alert(
-    voices.map(v => v.name + " (" + v.lang + ")").join("\n")
-  );
-}, 2000);
-
   </script>
 </body>
 </html>
