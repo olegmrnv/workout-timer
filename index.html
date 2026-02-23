@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Exercise Announcer Timer</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: #111b2e;
+      --text: #e7eefc;
+      --muted: #a9b7d6;
+      --accent: #7aa7ff;
+      --danger: #ff6b6b;
+      --ok: #3ddc97;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: radial-gradient(1200px 700px at 20% 0%, #122046 0%, var(--bg) 50%) fixed;
+      color: var(--text);
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+    }
+
+    .wrap {
+      width: min(920px, 100%);
+      display: grid;
+      gap: 14px;
+    }
+
+    .card {
+      background: rgba(17, 27, 46, 0.92);
+      border: 1px solid rgba(122, 167, 255, 0.18);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.35);
+      backdrop-filter: blur(8px);
+    }
+
+    .top {
+      display: grid;
+      gap: 12px;
+    }
+
+    .titleRow {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: 0.2px;
+    }
+
+    .hint { color: var(--muted); font-size: 13px; }
+
+    .timerGrid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: 1.2fr 1fr;
+    }
+
+    @media (max-width: 720px) {
+      .timerGrid { grid-template-columns: 1fr; }
+    }
+
+    .big {
+      display: grid;
+      gap: 10px;
+    }
+
+    .phase {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .nowName {
+      font-size: 22px;
+      font-weight: 650;
+      line-height: 1.2;
+    }
+
+    .countdown {
+      font-variant-numeric: tabular-nums;
+      font-size: 72px;
+      font-weight: 750;
+      letter-spacing: 1px;
+      line-height: 1;
+      margin-top: 2px;
+    }
+
+    .subrow {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+      .pill {
+          display: flex; /* 🔥 makes centering precise */
+          align-items: center; /* vertical center */
+          justify-content: center; /* horizontal center */
+          padding: 6px 14px; /* slightly balanced */
+          border-radius: 999px;
+          background: rgba(122, 167, 255, 0.12);
+          border: 1px solid rgba(122, 167, 255, 0.22);
+          line-height: 1; /* removes extra vertical font space */
+      }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-weight: 650;
+      color: #061027;
+      background: var(--accent);
+      cursor: pointer;
+      transition: transform 0.05s ease;
+    }
+    button:active { transform: translateY(1px); }
+    button.secondary {
+      background: rgba(231, 238, 252, 0.12);
+      color: var(--text);
+      border: 1px solid rgba(231, 238, 252, 0.16);
+    }
+    button.danger {
+      background: var(--danger);
+      color: #1b0505;
+    }
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .rightPanel {
+      display: grid;
+      gap: 12px;
+    }
+
+    .settings {
+      display: grid;
+      gap: 10px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+    @media (max-width: 520px) {
+      .row { grid-template-columns: 1fr; }
+    }
+
+    label { font-size: 13px; color: var(--muted); }
+
+    select, input[type="range"], input[type="checkbox"] {
+      width: 100%;
+    }
+
+    select {
+      background: rgba(231, 238, 252, 0.08);
+      border: 1px solid rgba(231, 238, 252, 0.16);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+    }
+
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .list {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .queue {
+      display: grid;
+      gap: 10px;
+    }
+
+    .queueHead {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .queueItems {
+      display: grid;
+      gap: 8px;
+      max-height: 260px;
+      overflow: auto;
+      padding-right: 6px;
+    }
+
+    .qItem {
+      border-radius: 14px;
+      border: 1px solid rgba(231, 238, 252, 0.12);
+      background: rgba(231, 238, 252, 0.06);
+      padding: 10px 12px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .qTop {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .qName { font-weight: 650; }
+    .qMeta { color: var(--muted); font-size: 12px; }
+
+    .badge {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(61, 220, 151, 0.28);
+      background: rgba(61, 220, 151, 0.10);
+      color: var(--ok);
+      white-space: nowrap;
+    }
+    .badge.break {
+      border-color: rgba(255, 107, 107, 0.25);
+      background: rgba(255, 107, 107, 0.10);
+      color: #ffb3b3;
+    }
+
+    .current {
+      outline: 2px solid rgba(122, 167, 255, 0.55);
+      background: rgba(122, 167, 255, 0.10);
+    }
+
+    .progressOuter {
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(231, 238, 252, 0.08);
+      overflow: hidden;
+      border: 1px solid rgba(231, 238, 252, 0.12);
+    }
+    .progressInner {
+      height: 100%;
+      width: 0%;
+      background: rgba(122, 167, 255, 0.85);
+      transition: width 0.15s linear;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card top">
+      <div class="titleRow">
+        <h1>Exercise Announcer Timer</h1>        
+      </div>
+
+      <div class="timerGrid">
+        <div class="big">
+          <div class="countdown" id="countdown">00:00</div>
+
+          <div class="progressOuter" aria-label="progress bar">
+            <div class="progressInner" id="progressInner"></div>
+          </div>
+
+          <div class="subrow">
+            <div class="pill" id="overallText">Overall: 0 / 0</div>
+            <div class="pill" id="remainingText">Remaining: 00:00</div>
+          </div>
+
+          <div class="controls">
+              <button id="btnStart">Start</button>
+              <button id="btnPauseToggle" class="secondary" disabled>Pause</button>
+              <button id="btnReset" class="danger" disabled>Reset</button>
+          </div>
+
+          <div class="small">
+            Tip: on iPhone, make sure the ringer isn’t muted and volume is up. Some browsers require tapping “Start” before speech works.
+          </div>
+        </div>
+
+        <div class="rightPanel">
+          <div class="card queue">
+            <div class="queueHead">
+              <div>
+                <div style="font-weight:650">Upcoming</div>
+                <div class="small">Shows the generated timeline</div>
+              </div>
+              <div class="small" id="totalDurationText">Total: 00:00</div>
+            </div>
+            <div class="queueItems" id="queueItems"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="small">
+        Current plan includes:
+        <ul class="list">
+          <li><b>Knee to the floor</b>: 30s work + 10s break, repeated 5 times (announcement at start)</li>
+          <li><b>Heal slides or calf stretch</b>: 30s work + 10s break, repeated 4 times</li>
+          <li><b>Glute bridge</b>: 12s work + 10s break, repeated 3 times</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // -----------------------------
+    // 1) Define your plan here
+    // -----------------------------
+    const PLAN = [
+      {
+        name: "Knee to the floor",
+        announce: "Knee to the floor",
+        workSec: 30,
+        breakSec: 10,
+        reps: 5
+      },
+      {
+        name: "Heal slides or calf stretch",
+        announce: "Heal slides or calf stretch",
+        workSec: 30,
+        breakSec: 10,
+        reps: 4
+      },
+      //Add a 3rd exercise like this:
+       {
+         name: "Glute bridge",
+         announce: "Glute bridge",
+         workSec: 12,
+         breakSec: 10,
+         reps: 3
+       }
+    ];
+
+    // -----------------------------
+    // 2) Build the timeline
+    // -----------------------------
+    function buildTimeline(plan) {
+        const items = [];
+
+        // 🔥 Add 10-second startup countdown segment
+        items.push({
+            type: "startup",
+            name: "Get Ready",
+            rep: 0,
+            of: 0,
+            durationSec: 10,
+            announceText: "Get ready. Starting in ten seconds."
+
+        });
+      for (const ex of plan) {
+        for (let r = 1; r <= ex.reps; r++) {
+          items.push({
+            type: "work",
+            name: ex.name,
+            rep: r,
+            of: ex.reps,
+            durationSec: ex.workSec,
+            announceText: r === 1 ? ex.announce : null // say the exercise name once at the beginning
+          });
+
+          // break after each rep, except after the last rep
+          if (ex.breakSec > 0 && r !== ex.reps) {
+            items.push({
+              type: "break",
+              name: "Break",
+              rep: r,
+              of: ex.reps,
+              durationSec: ex.breakSec,
+              announceText: "Break"
+            });
+          }
+        }
+      }
+
+      // Optional final announcement segment (0 seconds)
+      items.push({
+        type: "done",
+        name: "Finished",
+        rep: 0,
+        of: 0,
+        durationSec: 0,
+        announceText: "Workout complete. Nice work."
+      });
+
+      return items;
+    }
+
+    // -----------------------------
+    // 3) UI & Timer engine
+    // -----------------------------
+    const els = {
+      countdown: document.getElementById("countdown"),
+      overallText: document.getElementById("overallText"),
+      remainingText: document.getElementById("remainingText"),
+      progressInner: document.getElementById("progressInner"),
+      queueItems: document.getElementById("queueItems"),
+      totalDurationText: document.getElementById("totalDurationText"),
+
+        btnStart: document.getElementById("btnStart"),
+        btnPauseToggle: document.getElementById("btnPauseToggle"),
+        btnReset: document.getElementById("btnReset"),
+      btnTest: document.getElementById("btnTest"),
+      btnRebuild: document.getElementById("btnRebuild"),
+
+      voiceSelect: document.getElementById("voiceSelect"),
+      voiceHint: document.getElementById("voiceHint"),      
+      rateLabel: document.getElementById("rateLabel"),
+      countdownChecks: document.getElementById("countdownChecks"),
+      beepChecks: document.getElementById("beepChecks"),
+    };
+
+    let timeline = buildTimeline(PLAN);
+
+    let state = {
+      running: false,
+      paused: false,
+      idx: 0,
+      segRemainingMs: 0,
+      segTotalMs: 0,
+      overallRemainingMs: 0,
+      lastTick: null,
+      intervalId: null,
+      spokeCountdownAt: new Set() // track spoken 3/2/1 per segment
+    };
+
+    // -----------------------------
+    // 4) Speech + Beep
+    // -----------------------------
+
+      // -----------------------------
+      // Hardcoded Voice: Microsoft David - English
+      // -----------------------------
+      let selectedVoice = null;
+
+      function loadVoices() {
+          if (!window.speechSynthesis) return;
+
+          const voices = speechSynthesis.getVoices();
+
+          if (!voices.length) return;
+
+          // Find Microsoft David specifically
+          selectedVoice = voices.find(v =>
+              v.name.includes("Microsoft David")
+          );
+
+          // Fallback if not found
+          if (!selectedVoice) {
+              selectedVoice = voices.find(v =>
+                  v.lang.toLowerCase().startsWith("en")
+              ) || voices[0];
+          }
+
+          console.log("Using voice:", selectedVoice.name);
+      }
+
+      function speak(text, { interrupt = false } = {}) {
+          if (!window.speechSynthesis || !text) return;
+
+          if (interrupt) speechSynthesis.cancel();
+
+          const utter = new SpeechSynthesisUtterance(text);
+          utter.rate = 1.0; // Hardcoded speech speed
+
+          if (selectedVoice) {
+              utter.voice = selectedVoice;
+          }
+
+          speechSynthesis.speak(utter);
+      }
+
+      // Important: load voices properly (Chrome loads async)
+      if (window.speechSynthesis) {
+          loadVoices();
+          speechSynthesis.onvoiceschanged = loadVoices;
+      }
+
+      function beep(freq = 880, durationMs = 120) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (!AudioCtx) return;
+
+          const ctx = new AudioCtx();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc.type = "sine";
+          osc.frequency.value = freq;
+          gain.gain.value = 0.06;
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+
+          setTimeout(() => {
+              osc.stop();
+              ctx.close();
+          }, durationMs);
+      }
+
+    // -----------------------------
+    // 5) Helpers
+    // -----------------------------
+    function formatMMSS(totalSeconds) {
+      totalSeconds = Math.max(0, Math.round(totalSeconds));
+      const m = Math.floor(totalSeconds / 60);
+      const s = totalSeconds % 60;
+      return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+    }
+
+    function computeTotalMs(items) {
+      return items.reduce((acc, it) => acc + (it.durationSec * 1000), 0);
+    }
+
+    function renderQueue() {
+      els.queueItems.innerHTML = "";
+      const totalMs = computeTotalMs(timeline);
+      els.totalDurationText.textContent = `Total: ${formatMMSS(totalMs / 1000)}`;
+
+      timeline.forEach((it, i) => {
+        const div = document.createElement("div");
+        div.className = "qItem" + (i === state.idx ? " current" : "");
+        const top = document.createElement("div");
+        top.className = "qTop";
+
+        const name = document.createElement("div");
+        name.className = "qName";
+        if (it.type === "work") name.textContent = `${it.name} — rep ${it.rep}/${it.of}`;
+        else if (it.type === "break") name.textContent = `Break`;
+        else name.textContent = "Finished";
+
+        const badge = document.createElement("div");
+        badge.className = "badge" + (it.type === "break" ? " break" : "");
+        badge.textContent = it.type === "work" ? "WORK" : (it.type === "break" ? "BREAK" : "DONE");
+
+        top.appendChild(name);
+        top.appendChild(badge);
+
+        const meta = document.createElement("div");
+        meta.className = "qMeta";
+        meta.textContent = it.type === "done" ? "" : `${it.durationSec}s`;
+
+        div.appendChild(top);
+        div.appendChild(meta);
+        els.queueItems.appendChild(div);
+      });
+    }
+
+      function setButtons() {
+          els.btnStart.disabled = state.running;
+
+          // Toggle button enabled only while running
+          els.btnPauseToggle.disabled = !state.running;
+
+          // Label changes based on paused state
+          els.btnPauseToggle.textContent = state.paused ? "Resume" : "Pause";
+
+          // Reset enabled after start (or if anything is in progress)
+          els.btnReset.disabled = !state.running && state.idx === 0 && state.segRemainingMs === 0;
+      }
+
+    function updateProgress() {
+      const total = state.segTotalMs || 1;
+      const done = total - state.segRemainingMs;
+      const pct = Math.min(100, Math.max(0, (done / total) * 100));
+      els.progressInner.style.width = `${pct}%`;
+    }
+
+    function updateOverallUI() {
+      const totalSegments = timeline.length;
+      els.overallText.textContent = `Overall: ${Math.min(state.idx + 1, totalSegments)} / ${totalSegments}`;
+      els.remainingText.textContent = `Remaining: ${formatMMSS(state.overallRemainingMs / 1000)}`;
+    }
+
+    function announceSegmentStart(item) {
+      // Exercise name announcement (first rep) or "Break"/"Done"
+      if (item.announceText) {
+        speak(item.announceText, { interrupt: true });
+      } else {
+        // Light non-intrusive announcement at each work segment start
+        if (item.type === "work") {
+          speak(`Rep ${item.rep}`, { interrupt: false });
+        }
+      }
+
+      // Beep on transitions
+      if (item.type === "work") beep(880, 120);
+      if (item.type === "break") beep(660, 120);
+      if (item.type === "done") beep(990, 250);
+    }
+
+      function maybeSpeakLast3Seconds() {
+          const secLeft = Math.ceil(state.segRemainingMs / 1000);
+
+          if (secLeft <= 3 && secLeft >= 1 && !state.spokeCountdownAt.has(secLeft)) {
+              state.spokeCountdownAt.add(secLeft);
+              speak(String(secLeft), { interrupt: false });
+          }
+      }
+
+    // -----------------------------
+    // 6) Timer control
+    // -----------------------------
+    function start() {
+      if (state.running) return;
+
+      // iOS/Safari: speech voices often need a user gesture to initialize
+      if (window.speechSynthesis) speechSynthesis.cancel();
+
+      state.running = true;
+      state.paused = false;
+      state.idx = 0;
+      state.spokeCountdownAt = new Set();
+
+      const first = timeline[state.idx];
+      state.segTotalMs = first.durationSec * 1000;
+      state.segRemainingMs = state.segTotalMs;
+      state.overallRemainingMs = computeTotalMs(timeline);
+      state.lastTick = performance.now();
+            
+      renderQueue();
+      updateProgress();
+      updateOverallUI();
+      els.countdown.textContent = formatMMSS(state.segRemainingMs / 1000);
+
+      announceSegmentStart(first);
+
+      state.intervalId = setInterval(tick, 50);
+      setButtons();
+    }
+
+      function togglePause() {
+          if (!state.running) return;
+
+          // If currently running -> pause
+          if (!state.paused) {
+              state.paused = true;
+              if (window.speechSynthesis) speechSynthesis.cancel(); // stop speaking mid-sentence
+          } else {
+              // If currently paused -> resume
+              state.paused = false;
+              state.lastTick = performance.now(); // prevent time jump
+
+              const it = timeline[state.idx];
+              if (it?.type === "work") speak("Resume", { interrupt: true });
+              if (it?.type === "break") speak("Resume break", { interrupt: true });
+          }
+
+          setButtons();
+      }
+
+    function reset() {
+      stopInterval();
+      if (window.speechSynthesis) speechSynthesis.cancel();
+
+      state.running = false;
+      state.paused = false;
+      state.idx = 0;
+      state.segRemainingMs = 0;
+      state.segTotalMs = 0;
+      state.overallRemainingMs = 0;
+      state.lastTick = null;
+      state.spokeCountdownAt = new Set();
+
+      els.countdown.textContent = "00:00";
+      els.progressInner.style.width = "0%";
+      els.overallText.textContent = "Overall: 0 / 0";
+      els.remainingText.textContent = "Remaining: 00:00";
+      renderQueue();
+      setButtons();
+    }
+
+    function stopInterval() {
+      if (state.intervalId) clearInterval(state.intervalId);
+      state.intervalId = null;
+    }
+
+    function nextSegment() {
+      state.idx += 1;
+      state.spokeCountdownAt = new Set();
+
+      const it = timeline[state.idx];
+      if (!it) {
+        // safety fallback
+        reset();
+        return;
+      }
+
+      state.segTotalMs = it.durationSec * 1000;
+      state.segRemainingMs = state.segTotalMs;
+
+      renderQueue();
+      updateProgress();
+
+      announceSegmentStart(it);
+
+      // If it's a 0-second DONE segment, immediately stop timer
+      if (it.type === "done" && it.durationSec === 0) {
+        els.countdown.textContent = "00:00";
+        state.overallRemainingMs = 0;
+        updateOverallUI();
+        stopInterval();
+        state.running = false;
+        state.paused = false;
+        setButtons();
+      }
+    }
+
+    function tick() {
+      if (!state.running || state.paused) return;
+
+      const now = performance.now();
+      const dt = now - state.lastTick;
+      state.lastTick = now;
+
+      state.segRemainingMs = Math.max(0, state.segRemainingMs - dt);
+      state.overallRemainingMs = Math.max(0, state.overallRemainingMs - dt);
+
+      els.countdown.textContent = formatMMSS(state.segRemainingMs / 1000);
+      updateProgress();
+      updateOverallUI();
+
+      maybeSpeakLast3Seconds();
+
+      if (state.segRemainingMs <= 0) {
+        // Segment ended
+        beep(520, 90);
+        nextSegment();
+      }
+    }
+
+    function rebuildPlan() {
+      // You can change PLAN in code, then hit "Rebuild plan" without reloading
+      if (window.speechSynthesis) speechSynthesis.cancel();
+      stopInterval();
+      timeline = buildTimeline(PLAN);
+      reset();
+      renderQueue();
+    }
+
+    // -----------------------------
+    // 7) Wire up events
+    // -----------------------------
+    els.btnStart.addEventListener("click", start);
+    els.btnReset.addEventListener("click", reset);
+      els.btnPauseToggle.addEventListener("click", togglePause);
+
+    // Voice loading can be async depending on browser
+    if (window.speechSynthesis) {
+      loadVoices();
+      speechSynthesis.onvoiceschanged = loadVoices;
+    } else {
+      els.voiceHint.textContent = "Speech synthesis not supported in this browser.";
+    }
+
+    // Initial render
+    renderQueue();
+    setButtons();
+  </script>
+</body>
+</html>
