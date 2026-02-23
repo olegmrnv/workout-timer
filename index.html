@@ -299,13 +299,7 @@
               <button id="btnReset" class="danger" disabled>Reset</button>
           </div>
 
-          
-<div id="voiceTestPanel" style="margin-top:20px;">
-  <button onclick="listVoices()">Show Voices</button>
-  <div id="voiceList" style="margin-top:10px;"></div>
-</div>
-
-          
+         
           <div class="small">
             Tip: on iPhone, make sure the ringer isn’t muted and volume is up. Some browsers require tapping “Start” before speech works.
           </div>
@@ -464,29 +458,56 @@
       // -----------------------------
       // Hardcoded Voice: Microsoft David - English
       // -----------------------------
-      let selectedVoice = null;
+      // -----------------------------
+// Hardcoded Voices:
+// - Prefer "Microsoft David" (Windows)
+// - Else prefer "Daniel" (common on iOS)
+// - Else any English voice
+// - Else first available
+// -----------------------------
+let selectedVoice = null;
 
-      function loadVoices() {
-          if (!window.speechSynthesis) return;
+function pickVoice(voices) {
+  const byName = (needle) =>
+    voices.find(v => (v.name || "").toLowerCase().includes(needle.toLowerCase()));
 
-          const voices = speechSynthesis.getVoices();
+  return (
+    byName("Microsoft David") ||
+    byName("Daniel") ||
+    voices.find(v => (v.lang || "").toLowerCase().startsWith("en")) ||
+    voices[0] ||
+    null
+  );
+}
 
-          if (!voices.length) return;
+function loadVoices() {
+  if (!window.speechSynthesis) return;
 
-          // Find Microsoft David specifically
-          selectedVoice = voices.find(v =>
-              v.name.includes("Microsoft David")
-          );
+  const voices = speechSynthesis.getVoices();
+  if (!voices || !voices.length) return;
 
-          // Fallback if not found
-          if (!selectedVoice) {
-              selectedVoice = voices.find(v =>
-                  v.lang.toLowerCase().startsWith("en")
-              ) || voices[0];
-          }
+  selectedVoice = pickVoice(voices);
+  console.log("Using voice:", selectedVoice?.name, selectedVoice?.lang);
+}
 
-          console.log("Using voice:", selectedVoice.name);
-      }
+function speak(text, { interrupt = false } = {}) {
+  if (!window.speechSynthesis || !text) return;
+
+  if (interrupt) speechSynthesis.cancel();
+
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.rate = 1.0; // hardcoded
+
+  if (selectedVoice) utter.voice = selectedVoice;
+
+  speechSynthesis.speak(utter);
+}
+
+// Load voices (Chrome/iOS can load async)
+if (window.speechSynthesis) {
+  loadVoices();
+  speechSynthesis.onvoiceschanged = loadVoices;
+}
 
       function speak(text, { interrupt = false } = {}) {
           if (!window.speechSynthesis || !text) return;
@@ -796,35 +817,7 @@
     voices.map(v => v.name + " (" + v.lang + ")").join("\n")
   );
 }, 2000);
-    function listVoices() {
-  const container = document.getElementById("voiceList");
-  container.innerHTML = "";
 
-  const voices = speechSynthesis.getVoices();
-
-  voices.forEach(v => {
-    const btn = document.createElement("button");
-    btn.textContent = `${v.name} (${v.lang})`;
-    btn.style.display = "block";
-    btn.style.margin = "6px 0";
-
-    btn.onclick = () => {
-      const utter = new SpeechSynthesisUtterance(
-        "This is how I sound for your workout timer."
-      );
-      utter.voice = v;
-      utter.rate = 1.0;
-      speechSynthesis.speak(utter);
-    };
-
-    container.appendChild(btn);
-  });
-}
-
-// Important for iOS
-if (window.speechSynthesis) {
-  speechSynthesis.onvoiceschanged = () => {};
-}
   </script>
 </body>
 </html>
